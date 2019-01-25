@@ -20,7 +20,7 @@ def mqtt(msg):
             mqtt_topic,
             msg,
             qos=0,
-            retain=True,
+            retain=False,
             hostname=mqtt_hostname,
             port=mqtt_port,
             client_id=mqtt_clientid,

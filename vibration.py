@@ -15,51 +15,63 @@ from slackclient import SlackClient
 
 PUSHOVER_SOUNDS = None
 
-def mqtt(msg)
-:
+
+def mqtt(msg):
     try:
         mqtt_auth = None
         if len(mqtt_username) > 0:
-            mqtt_auth = { 'username': mqtt_username, 'password': mqtt_password }
+            mqtt_auth = {"username": mqtt_username, "password": mqtt_password}
 
-        mqttpublish.single(mqtt_topic, msg, qos=0, retain=False, hostname=mqtt_hostname,
-        port=mqtt_port, client_id=mqtt_clientid, keepalive=60, will=None, auth=mqtt_auth,
-        tls=None)
+        mqttpublish.single(
+            mqtt_topic,
+            msg,
+            qos=0,
+            retain=False,
+            hostname=mqtt_hostname,
+            port=mqtt_port,
+            client_id=mqtt_clientid,
+            keepalive=60,
+            will=None,
+            auth=mqtt_auth,
+            tls=None,
+        )
     except (KeyboardInterrupt, SystemExit):
         raise
-    except:
+    except Exception:
         pass
+
 
 def pushbullet(cfg, msg):
     try:
         data_send = {"type": "note", "body": msg}
         requests.post(
-            'https://api.pushbullet.com/v2/pushes',
+            "https://api.pushbullet.com/v2/pushes",
             data=json.dumps(data_send),
-            headers={'Authorization': 'Bearer ' + cfg,
-                     'Content-Type': 'application/json'})
+            headers={"Authorization": "Bearer " + cfg, "Content-Type": "application/json"},
+        )
     except (KeyboardInterrupt, SystemExit):
         raise
-    except:
+    except Exception:
         pass
+
 
 def get_pushoversounds(app_key):
     global PUSHOVER_SOUNDS
 
     if not PUSHOVER_SOUNDS:
-        url_data = "https://api.pushover.net/1/sounds.json?token={}" .format(app_key)
+        url_data = "https://api.pushover.net/1/sounds.json?token={}".format(app_key)
 
         try:
             r = requests.get(url_data)
             json_data = r.json()
-            PUSHOVER_SOUNDS = json_data['sounds']
+            PUSHOVER_SOUNDS = json_data["sounds"]
         except (KeyboardInterrupt, SystemExit):
             raise
-        except:
+        except Exception:
             pass
 
 
-def pushover(user_key, app_key, msg, device='', sound=''):
+def pushover(user_key, app_key, msg, device="", sound=""):
     global PUSHOVER_SOUNDS
 
     if not PUSHOVER_SOUNDS:
@@ -68,64 +80,67 @@ def pushover(user_key, app_key, msg, device='', sound=''):
     data_send = {"user": user_key, "token": app_key, "message": msg}
 
     if device:
-        data_send['device'] = device
+        data_send["device"] = device
 
     if sound in PUSHOVER_SOUNDS:
-        data_send['sound'] = sound
+        data_send["sound"] = sound
 
     try:
         requests.post(
-            'https://api.pushover.net/1/messages.json',
+            "https://api.pushover.net/1/messages.json",
             data=json.dumps(data_send),
-            headers={'Content-Type': 'application/json'})
+            headers={"Content-Type": "application/json"},
+        )
     except (KeyboardInterrupt, SystemExit):
         raise
-    except:
+    except Exception:
         pass
+
 
 def iftt(msg):
     try:
-        iftt_url = "https://maker.ifttt.com/trigger/{}/with/key/{}".format(iftt_maker_channel_event,
-                                                                           iftt_maker_channel_key)
-        report = {"value1" : msg}
-        resp = requests.post(iftt_url, data=report)
+        iftt_url = "https://maker.ifttt.com/trigger/{}/with/key/{}".format(
+            iftt_maker_channel_event, iftt_maker_channel_key
+        )
+        report = {"value1": msg}
+        requests.post(iftt_url, data=report)
     except (KeyboardInterrupt, SystemExit):
         raise
-    except:
+    except Exception:
         pass
+
 
 def slack_webhook(msg):
     try:
-        requests.post(slack_webhook_url, json={'text': msg}, headers={"Content-type": "application/json"})
+        requests.post(slack_webhook_url, json={"text": msg}, headers={"Content-type": "application/json"})
     except (KeyboardInterrupt, SystemExit):
         raise
-    except:
+    except Exception:
         pass
+
 
 def tweet(msg):
     try:
         # Twitter is the only API that NEEDS something like a timestamp,
         # since it will reject identical tweets.
-        tweet = msg + ' ' + strftime("%Y-%m-%d %H:%M:%S", localtime())
+        tweet = msg + " " + strftime("%Y-%m-%d %H:%M:%S", localtime())
         auth = TweetHandler(twitter_api_key, twitter_api_secret)
-        auth.set_access_token(twitter_access_token,
-                              twitter_access_token_secret)
+        auth.set_access_token(twitter_access_token, twitter_access_token_secret)
         tweepy.API(auth).update_status(status=tweet)
     except (KeyboardInterrupt, SystemExit):
         raise
-    except:
+    except Exception:
         pass
 
 
 def slack(msg):
     try:
-        slack = msg + ' ' + strftime("%Y-%m-%d %H:%M:%S", localtime())
+        slack = msg + " " + strftime("%Y-%m-%d %H:%M:%S", localtime())
         sc = SlackClient(slack_api_token)
-        sc.api_call(
-            'chat.postMessage', channel='#random', text=slack)
+        sc.api_call("chat.postMessage", channel="#random", text=slack)
     except (KeyboardInterrupt, SystemExit):
         raise
-    except:
+    except Exception:
         pass
 
 
@@ -142,12 +157,13 @@ def send_alert(message):
             tweet(message)
         if len(slack_api_token) > 0:
             slack(message)
-        if len (slack_webhook_url) > 0:
+        if len(slack_webhook_url) > 0:
             slack_webhook(message)
         if len(iftt_maker_channel_key) > 0:
             iftt(message)
         if len(mqtt_topic) > 0:
             mqtt(message)
+
 
 def send_appliance_active_message():
     send_alert(start_message)
@@ -165,7 +181,7 @@ def vibrated(x):
     global vibrating
     global last_vibration_time
     global start_vibration_time
-    logging.debug('Vibrated')
+    logging.debug("Vibrated")
     last_vibration_time = time.time()
     if not vibrating:
         start_vibration_time = last_vibration_time
@@ -177,17 +193,15 @@ def heartbeat():
     logging.debug("HB at {}".format(current_time))
     global vibrating
     delta_vibration = last_vibration_time - start_vibration_time
-    if (vibrating and delta_vibration > begin_seconds
-            and not appliance_active):
+    if vibrating and delta_vibration > begin_seconds and not appliance_active:
         send_appliance_active_message()
-    if (not vibrating and appliance_active
-            and current_time - last_vibration_time > end_seconds):
+    if not vibrating and appliance_active and current_time - last_vibration_time > end_seconds:
         send_appliance_inactive_message()
     vibrating = current_time - last_vibration_time < 2
     threading.Timer(1, heartbeat).start()
 
 
-logging.basicConfig(format='%(message)s', level=logging.INFO)
+logging.basicConfig(format="%(message)s", level=logging.INFO)
 
 if len(sys.argv) == 1:
     logging.critical("No config file specified")
@@ -200,40 +214,40 @@ start_vibration_time = last_vibration_time
 
 config = SafeConfigParser()
 config.read(sys.argv[1])
-verbose = config.getboolean('main', 'VERBOSE')
-sensor_pin = config.getint('main', 'SENSOR_PIN')
-begin_seconds = config.getint('main', 'SECONDS_TO_START')
-end_seconds = config.getint('main', 'SECONDS_TO_END')
-pushbullet_api_key = config.get('pushbullet', 'API_KEY')
+verbose = config.getboolean("main", "VERBOSE")
+sensor_pin = config.getint("main", "SENSOR_PIN")
+begin_seconds = config.getint("main", "SECONDS_TO_START")
+end_seconds = config.getint("main", "SECONDS_TO_END")
+pushbullet_api_key = config.get("pushbullet", "API_KEY")
 
-pushover_user_key = config.get('pushover', 'user_api_key')
-pushover_app_key = config.get('pushover', 'app_api_key')
-pushover_device  = config.get('pushover', 'device')
-pushover_sound   = config.get('pushover', 'sound')
+pushover_user_key = config.get("pushover", "user_api_key")
+pushover_app_key = config.get("pushover", "app_api_key")
+pushover_device = config.get("pushover", "device")
+pushover_sound = config.get("pushover", "sound")
 
-mqtt_hostname = config.get('mqtt', 'mqtt_hostname')
-mqtt_port = config.get('mqtt', 'mqtt_port')
-mqtt_topic = config.get('mqtt', 'mqtt_topic')
-mqtt_username = config.get('mqtt', 'mqtt_username')
-mqtt_password = config.get('mqtt', 'mqtt_password')
-mqtt_clientid = config.get('mqtt', 'mqtt_clientid')
+mqtt_hostname = config.get("mqtt", "mqtt_hostname")
+mqtt_port = config.get("mqtt", "mqtt_port")
+mqtt_topic = config.get("mqtt", "mqtt_topic")
+mqtt_username = config.get("mqtt", "mqtt_username")
+mqtt_password = config.get("mqtt", "mqtt_password")
+mqtt_clientid = config.get("mqtt", "mqtt_clientid")
 
-pushbullet_api_key2 = config.get('pushbullet', 'API_KEY2')
-start_message = config.get('main', 'START_MESSAGE')
-end_message = config.get('main', 'END_MESSAGE')
-twitter_api_key = config.get('twitter', 'api_key')
-twitter_api_secret = config.get('twitter', 'api_secret')
-twitter_access_token = config.get('twitter', 'access_token')
-twitter_access_token_secret = config.get('twitter', 'access_token_secret')
-slack_api_token = config.get('slack', 'api_token')
-slack_webhook_url = config.get('slack','webhook_url')
-iftt_maker_channel_event = config.get('iftt','maker_channel_event')
-iftt_maker_channel_key = config.get('iftt','maker_channel_key')
+pushbullet_api_key2 = config.get("pushbullet", "API_KEY2")
+start_message = config.get("main", "START_MESSAGE")
+end_message = config.get("main", "END_MESSAGE")
+twitter_api_key = config.get("twitter", "api_key")
+twitter_api_secret = config.get("twitter", "api_secret")
+twitter_access_token = config.get("twitter", "access_token")
+twitter_access_token_secret = config.get("twitter", "access_token_secret")
+slack_api_token = config.get("slack", "api_token")
+slack_webhook_url = config.get("slack", "webhook_url")
+iftt_maker_channel_event = config.get("iftt", "maker_channel_event")
+iftt_maker_channel_key = config.get("iftt", "maker_channel_key")
 
 if verbose:
     logging.getLogger().setLevel(logging.DEBUG)
 
-send_alert(config.get('main', 'BOOT_MESSAGE'))
+send_alert(config.get("main", "BOOT_MESSAGE"))
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
@@ -241,7 +255,5 @@ GPIO.setup(sensor_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.add_event_detect(sensor_pin, GPIO.RISING)
 GPIO.add_event_callback(sensor_pin, vibrated)
 
-logging.info('Running config file {} monitoring GPIO pin {}'\
-      .format(sys.argv[1], str(sensor_pin)))
+logging.info("Running config file {} monitoring GPIO pin {}".format(sys.argv[1], str(sensor_pin)))
 threading.Timer(1, heartbeat).start()
-

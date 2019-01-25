@@ -9,13 +9,14 @@ import tweepy
 from time import localtime, strftime
 import paho.mqtt.publish as mqttpublish
 
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 from tweepy import OAuthHandler as TweetHandler
 from slackclient import SlackClient
 
 PUSHOVER_SOUNDS = None
 
-def mqtt(msg):
+def mqtt(msg)
+:
     try:
         mqtt_auth = None
         if len(mqtt_username) > 0:

@@ -1,17 +1,11 @@
-import sys
-import time
 import logging
+import sys
 import threading
-import RPi.GPIO as GPIO
-import requests
-import json
-import tweepy
-from time import localtime, strftime
-import paho.mqtt.publish as mqttpublish
-
+import time
 from configparser import SafeConfigParser
-from tweepy import OAuthHandler as TweetHandler
-from slackclient import SlackClient
+
+import paho.mqtt.publish as mqttpublish
+import RPi.GPIO as GPIO
 
 PUSHOVER_SOUNDS = None
 
@@ -41,126 +35,9 @@ def mqtt(msg):
         pass
 
 
-def pushbullet(cfg, msg):
-    try:
-        data_send = {"type": "note", "body": msg}
-        requests.post(
-            "https://api.pushbullet.com/v2/pushes",
-            data=json.dumps(data_send),
-            headers={"Authorization": "Bearer " + cfg, "Content-Type": "application/json"},
-        )
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except Exception:
-        pass
-
-
-def get_pushoversounds(app_key):
-    global PUSHOVER_SOUNDS
-
-    if not PUSHOVER_SOUNDS:
-        url_data = "https://api.pushover.net/1/sounds.json?token={}".format(app_key)
-
-        try:
-            r = requests.get(url_data)
-            json_data = r.json()
-            PUSHOVER_SOUNDS = json_data["sounds"]
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except Exception:
-            pass
-
-
-def pushover(user_key, app_key, msg, device="", sound=""):
-    global PUSHOVER_SOUNDS
-
-    if not PUSHOVER_SOUNDS:
-        get_pushoversounds(app_key)
-
-    data_send = {"user": user_key, "token": app_key, "message": msg}
-
-    if device:
-        data_send["device"] = device
-
-    if sound in PUSHOVER_SOUNDS:
-        data_send["sound"] = sound
-
-    try:
-        requests.post(
-            "https://api.pushover.net/1/messages.json",
-            data=json.dumps(data_send),
-            headers={"Content-Type": "application/json"},
-        )
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except Exception:
-        pass
-
-
-def iftt(msg):
-    try:
-        iftt_url = "https://maker.ifttt.com/trigger/{}/with/key/{}".format(
-            iftt_maker_channel_event, iftt_maker_channel_key
-        )
-        report = {"value1": msg}
-        requests.post(iftt_url, data=report)
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except Exception:
-        pass
-
-
-def slack_webhook(msg):
-    try:
-        requests.post(slack_webhook_url, json={"text": msg}, headers={"Content-type": "application/json"})
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except Exception:
-        pass
-
-
-def tweet(msg):
-    try:
-        # Twitter is the only API that NEEDS something like a timestamp,
-        # since it will reject identical tweets.
-        tweet = msg + " " + strftime("%Y-%m-%d %H:%M:%S", localtime())
-        auth = TweetHandler(twitter_api_key, twitter_api_secret)
-        auth.set_access_token(twitter_access_token, twitter_access_token_secret)
-        tweepy.API(auth).update_status(status=tweet)
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except Exception:
-        pass
-
-
-def slack(msg):
-    try:
-        slack = msg + " " + strftime("%Y-%m-%d %H:%M:%S", localtime())
-        sc = SlackClient(slack_api_token)
-        sc.api_call("chat.postMessage", channel="#random", text=slack)
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except Exception:
-        pass
-
-
 def send_alert(message):
     if len(message) > 1:
         logging.info(message)
-        if len(pushover_user_key) > 0 and len(pushover_app_key) > 0:
-            pushover(pushover_user_key, pushover_app_key, message, pushover_device, pushover_sound)
-        if len(pushbullet_api_key) > 0:
-            pushbullet(pushbullet_api_key, message)
-        if len(pushbullet_api_key2) > 0:
-            pushbullet(pushbullet_api_key2, message)
-        if len(twitter_api_key) > 0:
-            tweet(message)
-        if len(slack_api_token) > 0:
-            slack(message)
-        if len(slack_webhook_url) > 0:
-            slack_webhook(message)
-        if len(iftt_maker_channel_key) > 0:
-            iftt(message)
         if len(mqtt_topic) > 0:
             mqtt(message)
 
@@ -218,12 +95,6 @@ verbose = config.getboolean("main", "VERBOSE")
 sensor_pin = config.getint("main", "SENSOR_PIN")
 begin_seconds = config.getint("main", "SECONDS_TO_START")
 end_seconds = config.getint("main", "SECONDS_TO_END")
-pushbullet_api_key = config.get("pushbullet", "API_KEY")
-
-pushover_user_key = config.get("pushover", "user_api_key")
-pushover_app_key = config.get("pushover", "app_api_key")
-pushover_device = config.get("pushover", "device")
-pushover_sound = config.get("pushover", "sound")
 
 mqtt_hostname = config.get("mqtt", "mqtt_hostname")
 mqtt_port = config.get("mqtt", "mqtt_port")
@@ -232,17 +103,8 @@ mqtt_username = config.get("mqtt", "mqtt_username")
 mqtt_password = config.get("mqtt", "mqtt_password")
 mqtt_clientid = config.get("mqtt", "mqtt_clientid")
 
-pushbullet_api_key2 = config.get("pushbullet", "API_KEY2")
 start_message = config.get("main", "START_MESSAGE")
 end_message = config.get("main", "END_MESSAGE")
-twitter_api_key = config.get("twitter", "api_key")
-twitter_api_secret = config.get("twitter", "api_secret")
-twitter_access_token = config.get("twitter", "access_token")
-twitter_access_token_secret = config.get("twitter", "access_token_secret")
-slack_api_token = config.get("slack", "api_token")
-slack_webhook_url = config.get("slack", "webhook_url")
-iftt_maker_channel_event = config.get("iftt", "maker_channel_event")
-iftt_maker_channel_key = config.get("iftt", "maker_channel_key")
 
 if verbose:
     logging.getLogger().setLevel(logging.DEBUG)

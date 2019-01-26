@@ -33,7 +33,7 @@ def mqtt(msg, topic, retain=False):
     except (KeyboardInterrupt, SystemExit):
         raise
     except Exception as e:
-        logging.debug("error sending mqtt: {}".format(e))
+        logging.debug("error sending {} mqtt to {} on topic {}: {}".format(msg, mqtt_hostname, topic, e))
         pass
 
 

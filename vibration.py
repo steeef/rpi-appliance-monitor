@@ -125,7 +125,6 @@ def sigterm_handler(signal, frame):
 
 
 signal.signal(signal.SIGTERM, sigterm_handler)
-signal.signal(signal.SIGKILL, sigterm_handler)
 
 
 GPIO.setwarnings(False)

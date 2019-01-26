@@ -1,4 +1,5 @@
 import logging
+import signal
 import sys
 import threading
 import time
@@ -10,14 +11,14 @@ import RPi.GPIO as GPIO
 PUSHOVER_SOUNDS = None
 
 
-def mqtt(msg):
+def mqtt(msg, topic):
     try:
         mqtt_auth = None
         if len(mqtt_username) > 0:
             mqtt_auth = {"username": mqtt_username, "password": mqtt_password}
 
         mqttpublish.single(
-            mqtt_topic,
+            topic,
             msg,
             qos=0,
             retain=False,
@@ -39,7 +40,7 @@ def send_alert(message):
     if len(message) > 1:
         logging.info(message)
         if len(mqtt_topic) > 0:
-            mqtt(message)
+            mqtt(message, mqtt_topic)
 
 
 def send_appliance_active_message():
@@ -99,17 +100,32 @@ end_seconds = config.getint("main", "SECONDS_TO_END")
 mqtt_hostname = config.get("mqtt", "mqtt_hostname")
 mqtt_port = config.get("mqtt", "mqtt_port")
 mqtt_topic = config.get("mqtt", "mqtt_topic")
+mqtt_availability_topic = config.get("mqtt", "mqtt_availability_topic")
 mqtt_username = config.get("mqtt", "mqtt_username")
 mqtt_password = config.get("mqtt", "mqtt_password")
 mqtt_clientid = config.get("mqtt", "mqtt_clientid")
 
 start_message = config.get("main", "START_MESSAGE")
 end_message = config.get("main", "END_MESSAGE")
+boot_message = config.get("main", "BOOT_MESSAGE")
+term_message = config.get("main", "TERM_MESSAGE")
 
 if verbose:
     logging.getLogger().setLevel(logging.DEBUG)
 
-send_alert(config.get("main", "BOOT_MESSAGE"))
+
+if len(mqtt_availability_topic) > 0:
+    mqtt(boot_message, mqtt_availability_topic)
+
+
+def sigterm_handler(signal, frame):
+    if len(mqtt_availability_topic) > 0:
+        mqtt(term_message, mqtt_availability_topic)
+    sys.exit(0)
+
+
+signal.signal(signal.SIGTERM, sigterm_handler)
+
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
@@ -118,4 +134,5 @@ GPIO.add_event_detect(sensor_pin, GPIO.RISING)
 GPIO.add_event_callback(sensor_pin, vibrated)
 
 logging.info("Running config file {} monitoring GPIO pin {}".format(sys.argv[1], str(sensor_pin)))
+
 threading.Timer(1, heartbeat).start()

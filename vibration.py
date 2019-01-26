@@ -99,7 +99,7 @@ begin_seconds = config.getint("main", "SECONDS_TO_START")
 end_seconds = config.getint("main", "SECONDS_TO_END")
 
 mqtt_hostname = config.get("mqtt", "mqtt_hostname")
-mqtt_port = config.get("mqtt", "mqtt_port")
+mqtt_port = int(config.get("mqtt", "mqtt_port"))
 mqtt_topic = config.get("mqtt", "mqtt_topic")
 mqtt_availability_topic = config.get("mqtt", "mqtt_availability_topic")
 mqtt_username = config.get("mqtt", "mqtt_username")

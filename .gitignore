@@ -1,4 +1,2 @@
-
-vibration_settings_dryer.ini
-vibration_settings_washer.ini
+*.ini
 pushover_test.ahk

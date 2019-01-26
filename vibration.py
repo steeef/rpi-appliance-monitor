@@ -115,11 +115,13 @@ if verbose:
 
 
 if len(mqtt_availability_topic) > 0:
+    logging.debug("sending {} to {}".format(boot_message, mqtt_availability_topic))
     mqtt(boot_message, mqtt_availability_topic, True)
 
 
 def sigterm_handler(signal, frame):
     if len(mqtt_availability_topic) > 0:
+        logging.debug("sending {} to {}".format(term_message, mqtt_availability_topic))
         mqtt(term_message, mqtt_availability_topic, True)
     sys.exit(0)
 

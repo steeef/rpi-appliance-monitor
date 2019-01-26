@@ -120,10 +120,11 @@ if len(mqtt_availability_topic) > 0:
 
 
 def sigterm_handler(signal, frame):
+    logging.debug("received SIGTERM, cleaning up")
     if len(mqtt_availability_topic) > 0:
         logging.debug("sending {} to {}".format(term_message, mqtt_availability_topic))
         mqtt(term_message, mqtt_availability_topic, True)
-    sys.exit(0)
+    sys.exit()
 
 
 signal.signal(signal.SIGTERM, sigterm_handler)

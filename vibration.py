@@ -11,7 +11,7 @@ import RPi.GPIO as GPIO
 PUSHOVER_SOUNDS = None
 
 
-def mqtt(msg, topic):
+def mqtt(msg, topic, retain):
     try:
         mqtt_auth = None
         if len(mqtt_username) > 0:
@@ -21,7 +21,7 @@ def mqtt(msg, topic):
             topic,
             msg,
             qos=0,
-            retain=False,
+            retain=retain,
             hostname=mqtt_hostname,
             port=mqtt_port,
             client_id=mqtt_clientid,
@@ -40,7 +40,7 @@ def send_alert(message):
     if len(message) > 1:
         logging.info(message)
         if len(mqtt_topic) > 0:
-            mqtt(message, mqtt_topic)
+            mqtt(message, mqtt_topic, False)
 
 
 def send_appliance_active_message():
@@ -115,12 +115,12 @@ if verbose:
 
 
 if len(mqtt_availability_topic) > 0:
-    mqtt(boot_message, mqtt_availability_topic)
+    mqtt(boot_message, mqtt_availability_topic, True)
 
 
 def sigterm_handler(signal, frame):
     if len(mqtt_availability_topic) > 0:
-        mqtt(term_message, mqtt_availability_topic)
+        mqtt(term_message, mqtt_availability_topic, False)
     sys.exit(0)
 
 
